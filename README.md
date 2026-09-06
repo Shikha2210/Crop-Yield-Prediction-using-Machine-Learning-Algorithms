@@ -9,9 +9,6 @@ The final step is to deploy the model and make predictions on new data. This can
 
 ---
 
-## Attribution
-
-Original project by [ShubhamKJ123](https://github.com/ShubhamKJ123/Crop-Yield-Prediction-using-Machine-Learning-Algorithms). This fork updates the code to run on modern TensorFlow/Keras and adds a reproducible setup.
 
 ### Changes in this fork
 
