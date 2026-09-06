@@ -10,11 +10,11 @@ import os
 import pandas as pd
 import numpy as np
 from tensorflow.keras.models import Sequential
-from keras.layers.core import Dense,Activation,Dropout, Flatten
-from keras.utils.np_utils import to_categorical
+from tensorflow.keras.layers import Dense, Activation, Dropout, Flatten
+from tensorflow.keras.utils import to_categorical
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
-import keras.layers
+from tensorflow import keras
 from tensorflow.keras.models import model_from_json
 import pickle
 from sklearn.preprocessing import StandardScaler
@@ -106,7 +106,6 @@ def runRNN():
             loaded_model_json = json_file.read()
             classifier = model_from_json(loaded_model_json)
         classifier.load_weights("model/rnnmodel_weights.h5")
-        classifier._make_predict_function()   
         print(classifier.summary())
         f = open('model/rnnhistory.pckl', 'rb')
         data = pickle.load(f)
@@ -144,7 +143,6 @@ def runLSTM():
             loaded_model_json = json_file.read()
             classifier1 = model_from_json(loaded_model_json)
         classifier1.load_weights("model/lstmmodel_weights.h5")
-        classifier1._make_predict_function()   
         print(classifier1.summary())
         f = open('model/lstmhistory.pckl', 'rb')
         data = pickle.load(f)
@@ -195,6 +193,9 @@ def runFF():
 def predict():
     text.delete('1.0', END)
     file = filedialog.askopenfilename(initialdir="dataset")
+    if not file:
+        text.insert(END, "No file selected. Please pick dataset/testData.csv")
+        return
     test = pd.read_csv(file)
     test['State_Name'] = pd.Series(le.fit_transform(test['State_Name']))
     test['District_Name'] = pd.Series(le.fit_transform(test['District_Name']))
