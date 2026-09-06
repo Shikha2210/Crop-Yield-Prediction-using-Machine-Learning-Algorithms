@@ -296,54 +296,185 @@ def topGraph():
     plt.show()        
 
     
-   
-font = ('times', 15, 'bold')
-title = Label(main, text='Crop Yield Prediction using RNN, Feedforward and LSTM Neural Network', justify=LEFT)
-title.config(bg='lavender blush', fg='DarkOrchid1')  
-title.config(font=font)           
-title.config(height=3, width=120)       
-title.place(x=100,y=5)
-title.pack()
 
-font1 = ('times', 12, 'bold')
-uploadButton = Button(main, text="Upload Agriculture Dataset", command=upload)
-uploadButton.place(x=10,y=100)
-uploadButton.config(font=font1)  
+# ============================================================
+# 10. USER INTERFACE
+# ============================================================
 
-preprocessButton = Button(main, text="Preprocess Dataset", command=preprocess)
-preprocessButton.place(x=300,y=100)
-preprocessButton.config(font=font1)
+BG        = "#eef1ee"   # window background
+SIDEBAR   = "#1d3b2a"   # deep green sidebar
+SIDE_DARK = "#162e21"   # sidebar section headings
+ACCENT    = "#2f7d4f"   # primary button
+ACCENT_HI = "#3b9c62"   # primary button hover
+PANEL     = "#ffffff"   # console panel
+CONSOLE   = "#111d16"   # console background
+CONSOLE_FG = "#d9e9df"  # console text
+INK       = "#16211a"   # dark text
+MUTED     = "#7b8a80"   # secondary text
 
-rnnButton = Button(main, text="Run RNN Algorithm", command=runRNN)
-rnnButton.place(x=480,y=100)
-rnnButton.config(font=font1)
+F_TITLE  = ("Segoe UI Semibold", 16)
+F_SUB    = ("Segoe UI", 9)
+F_SECTION = ("Segoe UI Semibold", 8)
+F_BTN    = ("Segoe UI", 10)
+F_PANEL  = ("Segoe UI Semibold", 10)
+F_MONO   = ("Consolas", 10)
+F_STATUS = ("Segoe UI", 9)
 
-lstmButton = Button(main, text="Run LSTM Algorithm", command=runLSTM)
-lstmButton.place(x=670,y=100)
-lstmButton.config(font=font1)
+main.title("Crop Yield Prediction System")
+main.minsize(880, 560)
+try:
+    # match the OS scaling factor so the layout fits high-DPI laptop screens
+    from ctypes import windll
+    windll.shcore.SetProcessDpiAwareness(1)
+except Exception:
+    pass
+try:
+    main.state("zoomed")          # open maximised - fits any screen size
+except Exception:
+    main.geometry("1100x700")
+main.configure(bg=BG)
 
-ffButton = Button(main, text="Run Feedforward Neural Network", command=runFF)
-ffButton.place(x=10,y=150)
-ffButton.config(font=font1)
 
-graphButton = Button(main, text="Accuracy Comparison Graph", command=graph)
-graphButton.place(x=300,y=150)
-graphButton.config(font=font1)
+def set_status(message, tone="idle"):
+    """Update the bottom status bar. tone: idle | busy | ok | err"""
+    dots = {"idle": MUTED, "busy": "#c9922e", "ok": ACCENT, "err": "#c0392b"}
+    status_dot.config(fg=dots.get(tone, MUTED))
+    status_label.config(text=message)
 
-predictButton = Button(main, text="Predict Disease using Test Data", command=predict)
-predictButton.place(x=10,y=200)
-predictButton.config(font=font1)
 
-topButton = Button(main, text="Top 6 Crop Yield Graph", command=topGraph)
-topButton.place(x=300,y=200)
-topButton.config(font=font1)
+def log(message=""):
+    """Append a line to the output console."""
+    text.insert(END, message + "\n")
+    text.see(END)
 
-font1 = ('times', 12, 'bold')
-text=Text(main,height=20,width=160)
-scroll=Scrollbar(text)
-text.configure(yscrollcommand=scroll.set)
-text.place(x=10,y=250)
-text.config(font=font1) 
 
-main.config(bg='light coral')
+def step(func, label):
+    """Wrap a pipeline function with status updates and error reporting."""
+    def handler():
+        set_status("Running — " + label, "busy")
+        main.config(cursor="watch")
+        main.update_idletasks()
+        try:
+            func()
+            set_status("Completed — " + label, "ok")
+        except Exception as exc:
+            set_status("Failed — " + label, "err")
+            log("")
+            log("ERROR in " + label + ": " + type(exc).__name__ + " — " + str(exc))
+        finally:
+            main.config(cursor="")
+    return handler
+
+
+def clear_output():
+    text.delete("1.0", END)
+    set_status("Output cleared", "idle")
+
+
+# ---------- header ----------
+header = Frame(main, bg=SIDEBAR, height=78)
+header.pack(side=TOP, fill=X)
+header.pack_propagate(False)
+
+Label(header, text="Crop Yield Prediction System", bg=SIDEBAR, fg="#ffffff",
+      font=F_TITLE).pack(side=LEFT, padx=24, pady=(16, 0), anchor="w")
+Label(header, text="RNN  ·  LSTM  ·  Feedforward Neural Networks",
+      bg=SIDEBAR, fg="#9dc4ad", font=F_SUB).pack(side=LEFT, padx=(0, 0), pady=(22, 0))
+
+# ---------- body ----------
+body = Frame(main, bg=BG)
+body.pack(side=TOP, fill=BOTH, expand=True)
+
+sidebar = Frame(body, bg=SIDEBAR, width=274)
+sidebar.pack(side=LEFT, fill=Y)
+sidebar.pack_propagate(False)
+
+
+def section(parent, caption):
+    holder = Frame(parent, bg=SIDE_DARK)
+    holder.pack(fill=X, pady=(14, 0))
+    Label(holder, text=caption.upper(), bg=SIDE_DARK, fg="#8fb69f",
+          font=F_SECTION, anchor="w").pack(fill=X, padx=20, pady=6)
+
+
+def side_button(parent, caption, command):
+    btn = Button(parent, text=caption, command=command, font=F_BTN,
+                 bg=ACCENT, fg="#ffffff", activebackground=ACCENT_HI,
+                 activeforeground="#ffffff", relief=FLAT, bd=0,
+                 cursor="hand2", anchor="w", padx=16, pady=9,
+                 highlightthickness=0)
+    btn.pack(fill=X, padx=16, pady=4)
+    btn.bind("<Enter>", lambda e: btn.config(bg=ACCENT_HI))
+    btn.bind("<Leave>", lambda e: btn.config(bg=ACCENT))
+    return btn
+
+
+section(sidebar, "1 · Dataset")
+side_button(sidebar, "Upload Agriculture Dataset", step(upload, "Upload dataset"))
+side_button(sidebar, "Preprocess Dataset", step(preprocess, "Preprocess dataset"))
+
+section(sidebar, "2 · Neural Networks")
+side_button(sidebar, "Run RNN Algorithm", step(runRNN, "RNN"))
+side_button(sidebar, "Run LSTM Algorithm", step(runLSTM, "LSTM"))
+side_button(sidebar, "Run Feedforward Network", step(runFF, "Feedforward network"))
+
+section(sidebar, "3 · Results")
+side_button(sidebar, "Accuracy Comparison Graph", step(graph, "Accuracy comparison"))
+side_button(sidebar, "Predict Crop Yield (Test Data)", step(predict, "Prediction"))
+side_button(sidebar, "Top 6 Crop Yield Graph", step(topGraph, "Top 6 crop yield"))
+
+Label(sidebar, text="Run the steps in order — each one\ndepends on the step above it.",
+      bg=SIDEBAR, fg="#6f9880", font=F_SUB, justify=LEFT,
+      anchor="w").pack(side=BOTTOM, fill=X, padx=20, pady=16)
+
+# ---------- console ----------
+content = Frame(body, bg=BG)
+content.pack(side=LEFT, fill=BOTH, expand=True, padx=18, pady=18)
+
+bar = Frame(content, bg=BG)
+bar.pack(fill=X, pady=(0, 8))
+Label(bar, text="Output", bg=BG, fg=INK, font=F_PANEL).pack(side=LEFT)
+clear_btn = Button(bar, text="Clear", command=clear_output, font=F_SUB,
+                   bg=BG, fg=MUTED, activebackground=BG, activeforeground=INK,
+                   relief=FLAT, bd=0, cursor="hand2", padx=10)
+clear_btn.pack(side=RIGHT)
+
+panel = Frame(content, bg=CONSOLE, highlightthickness=1,
+              highlightbackground="#cfd8d2")
+panel.pack(fill=BOTH, expand=True)
+
+scroll = Scrollbar(panel)
+scroll.pack(side=RIGHT, fill=Y)
+
+text = Text(panel, bg=CONSOLE, fg=CONSOLE_FG, font=F_MONO, wrap=NONE,
+            relief=FLAT, bd=0, padx=14, pady=12, insertbackground=CONSOLE_FG,
+            yscrollcommand=scroll.set)
+text.pack(side=LEFT, fill=BOTH, expand=True)
+scroll.config(command=text.yview)
+
+hscroll = Scrollbar(content, orient=HORIZONTAL, command=text.xview)
+hscroll.pack(fill=X)
+text.config(xscrollcommand=hscroll.set)
+
+# ---------- status bar ----------
+statusbar = Frame(main, bg="#dfe5e0", height=30)
+statusbar.pack(side=BOTTOM, fill=X)
+statusbar.pack_propagate(False)
+
+status_dot = Label(statusbar, text="●", bg="#dfe5e0", fg=MUTED,
+                   font=("Segoe UI", 10))
+status_dot.pack(side=LEFT, padx=(16, 6))
+status_label = Label(statusbar, text="Ready — start with 'Upload Agriculture Dataset'",
+                     bg="#dfe5e0", fg=INK, font=F_STATUS)
+status_label.pack(side=LEFT)
+Label(statusbar, text="TensorFlow · Keras · scikit-learn", bg="#dfe5e0",
+      fg=MUTED, font=F_STATUS).pack(side=RIGHT, padx=16)
+
+log("Crop Yield Prediction System")
+log("=" * 74)
+log("")
+log("Pipeline:  dataset  ->  preprocessing  ->  neural networks  ->  prediction")
+log("Use the panel on the left, working top to bottom.")
+log("")
+
 main.mainloop()
